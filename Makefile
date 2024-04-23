@@ -20,19 +20,16 @@ opensbi: linux
 	+$(MAKE) -C src/opensbi O="$(shell pwd)/$(BUILD_DIR)/opensbi" \
 		CROSS_COMPILE=$(CROSS_COMPILE) \
 		PLATFORM=generic \
-		FW_PAYLOAD_PATH="$(shell pwd)/$(BUILD_DIR)/linux/arch/riscv/boot/Image"
+		FW_PAYLOAD_PATH="$(shell pwd)/$(BUILD_DIR)/Image"
 
 linux: FORCE
-	+$(MAKE) -C src/linux O=../../$(BUILD_DIR)/linux \
-		CROSS_COMPILE=$(CROSS_COMPILE) ARCH=riscv \
-		$(SOC)_$(BOARD)_defconfig
-	+$(MAKE) -C src/linux O=../../$(BUILD_DIR)/linux \
-		CROSS_COMPILE=$(CROSS_COMPILE) ARCH=riscv
+	- mkdir $(BUILD_DIR)
+	cp "$(shell pwd)/src/linux/arch/riscv/boot/Image" "$(shell pwd)/$(BUILD_DIR)/Image"
 
 .PHONY: FORCE
 
 FW_PAYLOAD = $(BUILD_DIR)/opensbi/platform/generic/firmware/fw_payload.bin
-DTB = $(BUILD_DIR)/$(SOC)-$(BOARD).dtb
+DTB = $(shell pwd)/src/linux/arch/riscv/boot/dts/canaan/$(SOC)-$(BOARD).dtb
 INITRD = $(BUILD_DIR)/initrd.img
 ROOTFS = $(BUILD_DIR)/rootfs.ext4
 
@@ -89,12 +86,12 @@ $(ROOTFS): Makefile $(BUILD_DIR)/ulinux.bin src/extlinux.conf $(DTB) \
 	fakeroot install -o root -g root -m 0644 -D src/extlinux.conf \
 		"$(BUILD_DIR)/rootfs/boot/extlinux/extlinux.conf"
 	fakeroot install -o root -g root -m 0644 -D \
-		"$(BUILD_DIR)/$(SOC)-$(BOARD).dtb" \
+		"$(shell pwd)/src/linux/arch/riscv/boot/dts/canaan/$(SOC)-$(BOARD).dtb" \
 		"$(BUILD_DIR)/rootfs/boot/dtbs/$(SOC)-$(BOARD).dtb"
 	fakeroot install -o root -g root -m 0755 -D \
 		"$(BUILD_DIR)/init" "$(BUILD_DIR)/rootfs/sbin/init"
 	fakeroot /sbin/mkfs.ext4 -L rootfs -d "$(BUILD_DIR)/rootfs" \
-		"$@.tmp" 10M
+		"$@.tmp" 20M
 	mv -f -- "$@.tmp" "$@"
 
 $(BUILD_DIR)/fn_%: $(BUILD_DIR)/%
